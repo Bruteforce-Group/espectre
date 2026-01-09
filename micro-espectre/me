@@ -11,13 +11,13 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Tuple
 
-FIRMWARE_RELEASE_URL = "https://github.com/francescopace/micropython-esp32-csi/releases/download/v1.0.0-rc3"
+FIRMWARE_RELEASE_URL = "https://github.com/francescopace/micropython-esp32-csi/releases/download/v1.0.0-rc4"
 FIRMWARE_NAME_PREFIX = "ESP32_CSI_"
 
 # SHA256 hashes for firmware verification (update when releasing new firmware)
 FIRMWARE_HASHES = {
-    'ESP32_CSI_S3.bin': 'cfd769e13cb54c24e2b9c43893d5c9356dd2670d246abfb8ebe79529c92fa5c0',
-    'ESP32_CSI_C6.bin': '183c795d1f110fff99c38e3b0a0485f9329dd6fa53c98cfe55c23b2543ffdb1d',
+    'ESP32_CSI_S3.bin': 'd498417e43ff0402f153946d18b5400c63c1d292c196c084b293630154df9c45',
+    'ESP32_CSI_C6.bin': '3ac5decc80296c55826033b4202ba435ac6271ba8176dfb7b2098d69776a9385',
 }
 
 try:

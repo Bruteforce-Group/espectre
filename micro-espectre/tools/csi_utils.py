@@ -122,23 +122,38 @@ class CSIReceiver:
         self._buffer_callbacks.append((callback, interval))
     
     def _parse_packet(self, data: bytes) -> Optional[CSIPacket]:
-        """Parse raw UDP data into CSIPacket"""
+        """Parse raw UDP data into CSIPacket
+        
+        Supports two protocol versions:
+        - v1 (legacy): <magic:2><num_sc:1><seq:1><payload>
+        - v2 (256 SC): <magic:2><version:1><seq:1><num_sc:2><payload>
+        """
         if len(data) < 4:
             return None
         
-        # Parse header
-        magic, num_sc, seq_num = struct.unpack('<HBB', data[:4])
+        # Parse magic and detect version
+        magic = struct.unpack('<H', data[:2])[0]
         
         if magic != MAGIC_STREAM:
             return None
         
+        # Check for v2 format (version byte = 0x02)
+        if len(data) >= 6 and data[2] == 0x02:
+            # v2 format: <magic:2><version:1><seq:1><num_sc:2><payload>
+            _, version, seq_num, num_sc = struct.unpack('<HBBH', data[:6])
+            header_size = 6
+        else:
+            # v1 format: <magic:2><num_sc:1><seq:1><payload>
+            _, num_sc, seq_num = struct.unpack('<HBB', data[:4])
+            header_size = 4
+        
         # Parse I/Q data
         iq_size = num_sc * 2
-        if len(data) < 4 + iq_size:
+        if len(data) < header_size + iq_size:
             return None
         
         iq_raw = np.array(
-            struct.unpack(f'<{iq_size}b', data[4:4+iq_size]),
+            struct.unpack(f'<{iq_size}b', data[header_size:header_size+iq_size]),
             dtype=np.int8
         )
         
@@ -273,7 +288,7 @@ class CSIReceiver:
                         break
                 
                 try:
-                    data, addr = self.sock.recvfrom(512)
+                    data, addr = self.sock.recvfrom(1024)  # 518 bytes max for 256 SC
                 except socket.timeout:
                     self._update_pps()
                     continue
@@ -558,7 +573,7 @@ class CSICollector:
                 
                 while time.time() - start_time < duration:
                     try:
-                        data, addr = self.receiver.sock.recvfrom(512)
+                        data, addr = self.receiver.sock.recvfrom(1024)  # 518 bytes max for 256 SC
                         packet = self.receiver._parse_packet(data)
                         if packet:
                             packets.append(packet)
@@ -635,7 +650,7 @@ class CSICollector:
                     
                     while time.time() - start_time < 2.0:
                         try:
-                            data, addr = self.receiver.sock.recvfrom(512)
+                            data, addr = self.receiver.sock.recvfrom(1024)  # 518 bytes max for 256 SC
                             packet = self.receiver._parse_packet(data)
                             if packet:
                                 packets.append(packet)
